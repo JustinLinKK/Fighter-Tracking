@@ -33,12 +33,11 @@ class NormFrangiNoSqrtMaskedMax(nn.Module):
       5. Per-axis max projection
     """
 
-    H = 480
-    W = 480
-    RESP_BORDER = 10  # border pixels zeroed on response
-
-    def __init__(self):
+    def __init__(self, height=480, width=480, border_mask_size=10):
         super().__init__()
+        self.height = height
+        self.width = width
+        self.border_mask_size = border_mask_size
 
         # Second-order Gaussian derivative kernels [3, 1, 7, 7]
         # Channel 0: g_xx, Channel 1: g_xy, Channel 2: g_yy
@@ -248,8 +247,8 @@ class NormFrangiNoSqrtMaskedMax(nn.Module):
         self.response_conv.weight = nn.Parameter(response_weight, requires_grad=False)
 
         # 10-pixel binary border mask for response [1, H, W]
-        resp_mask = torch.zeros(1, self.H, self.W)
-        b = self.RESP_BORDER
+        resp_mask = torch.zeros(1, self.height, self.width)
+        b = self.border_mask_size
         resp_mask[:, b:-b, b:-b] = 1.0
         self.register_buffer("resp_mask", resp_mask)
 
@@ -280,14 +279,14 @@ class NormFrangiNoSqrtMaskedMax(nn.Module):
         response = response * self.resp_mask
 
         # -- Step 5: Per-axis max projection --
-        resp_2d = response.view(self.H, self.W)  # [H, W]
+        resp_2d = response.view(self.height, self.width)  # [H, W]
         x_max = resp_2d.max(dim=0).values  # [W]
         y_max = resp_2d.max(dim=1).values  # [H]
 
         return response, x_max, y_max
 
 
-def export_onnx(output_path: str = "Norm_Frangi_NoSqrt_480.onnx"):
+def export_onnx(output_path: str = "Norm_Grad_Response_Masked_Max_480.onnx"):
     model = NormFrangiNoSqrtMaskedMax()
     model.eval()
 
@@ -306,53 +305,5 @@ def export_onnx(output_path: str = "Norm_Frangi_NoSqrt_480.onnx"):
     print(f"Exported to {output_path}")
 
 
-def compare_models(original_path: str, new_path: str):
-    """Run both ONNX models on the same input and compare outputs."""
-    import numpy as np
-
-    try:
-        import onnxruntime as ort
-    except ImportError:
-        print("onnxruntime not installed. Install with: pip install onnxruntime")
-        return
-
-    # Create reproducible test input
-    np.random.seed(42)
-    test_input = np.random.rand(1, 1, 480, 480).astype(np.float32) * 255
-
-    sess_orig = ort.InferenceSession(original_path)
-    sess_new = ort.InferenceSession(new_path)
-
-    out_orig = sess_orig.run(None, {"image_clone": test_input})
-    out_new = sess_new.run(None, {"image_clone": test_input})
-
-    names = ["response", "x_max", "y_max"]
-    for i, name in enumerate(names):
-        o = out_orig[i]
-        n = out_new[i]
-        max_diff = np.max(np.abs(o - n))
-        mean_diff = np.mean(np.abs(o - n))
-        cos_sim = np.dot(o.flatten(), n.flatten()) / (
-            np.linalg.norm(o.flatten()) * np.linalg.norm(n.flatten()) + 1e-8
-        )
-        print(f"[{name}] shape_orig={o.shape} shape_new={n.shape}")
-        print(
-            f"  max_diff={max_diff:.6e}  mean_diff={mean_diff:.6e}  cos_sim={cos_sim:.6f}"
-        )
-        print(f"  orig range=[{o.min():.4f}, {o.max():.4f}]")
-        print(f"  new  range=[{n.min():.4f}, {n.max():.4f}]")
-        print()
-
-
 if __name__ == "__main__":
-    import sys
-
-    nosqrt_path = "Norm_Frangi_NoSqrt_480.onnx"
-    original_path = (
-        "/home/downeyflyfan/Research_Projects/Track/CPP-Track/"
-        "hspeedtrack_x86/onnx2trt/Norm_Grad_Response_Masked_Max_480.onnx"
-    )
-
-    export_onnx(nosqrt_path)
-    print("\n=== Original (det²) vs NormFrangiNoSqrt (det, no sqrt) ===")
-    compare_models(original_path, nosqrt_path)
+    export_onnx("Norm_Grad_Response_Masked_Max_480.onnx")

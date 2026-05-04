@@ -12,18 +12,18 @@
 // Frangi response bounding box, and destination keypoints.
 // Returns corrected bbox in {x, y, w, h} format.
 inline Box CtrCorrect(const Point &current_ctr_xy, const Box &frangi_xyxy,
-                      const Box &bbox_per5_last,
-                      const std::vector<Point> &per5_dst_pts) {
+                      const Box &tgt_xywh_refined_last,
+                      const std::vector<Point> &smitri_dst_pts) {
     float left_dis = std::abs(current_ctr_xy[0] - frangi_xyxy[0]);
     float right_dis = std::abs(current_ctr_xy[0] - frangi_xyxy[2]);
     float top_dis = std::abs(current_ctr_xy[1] - frangi_xyxy[1]);
     float bottom_dis = std::abs(current_ctr_xy[1] - frangi_xyxy[3]);
 
     bool lr_adjust =
-        (left_dis > bbox_per5_last[2]) || (right_dis > bbox_per5_last[2]);
+        (left_dis > tgt_xywh_refined_last[2]) || (right_dis > tgt_xywh_refined_last[2]);
     bool l_bigger_r = (left_dis > right_dis);
     bool tb_adjust =
-        (top_dis > bbox_per5_last[3]) || (bottom_dis > bbox_per5_last[3]);
+        (top_dis > tgt_xywh_refined_last[3]) || (bottom_dis > tgt_xywh_refined_last[3]);
     bool t_bigger_b = (top_dis > bottom_dis);
 
     Box adjust_xyxy = {
@@ -51,7 +51,7 @@ inline Box CtrCorrect(const Point &current_ctr_xy, const Box &frangi_xyxy,
     float max_x = std::numeric_limits<float>::lowest();
     float max_y = std::numeric_limits<float>::lowest();
 
-    for (const auto &pt : per5_dst_pts) {
+    for (const auto &pt : smitri_dst_pts) {
         if (pt[0] < min_x)
             min_x = pt[0];
         if (pt[0] > max_x)

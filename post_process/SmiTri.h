@@ -18,8 +18,8 @@ struct SmiTriCheck {
     std::vector<Point> dst_points;
 };
 
-inline constexpr float SPREAD_THRESH = 1.0f;
-inline constexpr float SHIFT_THRESH = 1.0f;
+inline constexpr float SPREAD_THRESH = 4.0f;
+inline constexpr float SHIFT_THRESH = 4.0f;
 
 // Determine whether to apply similar triangle (SmiTri) correction
 // based on extremal keypoint spread in both source and destination frames.

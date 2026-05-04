@@ -40,6 +40,9 @@ get_sorted_image_entries(const std::string &folder_path) {
     return entries;
 }
 
+#ifdef USE_TENSORRT
+#include <cuda_runtime_api.h>
+
 #define CHECK_CUDA(call)                                                       \
     do {                                                                       \
         cudaError_t err = call;                                                \
@@ -49,6 +52,7 @@ get_sorted_image_entries(const std::string &folder_path) {
             exit(EXIT_FAILURE);                                                \
         }                                                                      \
     } while (0)
+#endif
 
 // Element-wise multiply response by flame mask
 inline void multiply(const float *response_mat, const float *flame_cover_mask,

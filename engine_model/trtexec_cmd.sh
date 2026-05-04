@@ -1,9 +1,8 @@
 trtexec \
-    --onnx=./Norm_Frangi_NoSqrt_480.onnx \
-    --saveEngine=./Norm_Frangi_NoSqrt_480.engine \
+    --onnx=./Norm_Grad_Response_Masked_Max_480.onnx \
+    --saveEngine=./Norm_Grad_Response_Masked_Max_480.engine \
     --fp16 \
     --builderOptimizationLevel=5 \
-    --tilingOptimizationLevel=3 \
     --avgTiming=16 \
     --useCudaGraph \
     --useManagedMemory \
